@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Heart, Search as SearchIcon, X } from "lucide-react";
 import { stations, searchStations } from "../data/stations";
 import { useRadioStore } from "../store/radio";
@@ -24,7 +24,6 @@ export function Search() {
 
   return (
     <>
-      {/* Floating search button */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 safe-top px-3 pt-3">
         <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2">
           <button
@@ -44,7 +43,6 @@ export function Search() {
         </div>
       </div>
 
-      {/* Bottom sheet */}
       {open && (
         <div className="absolute inset-0 z-40 flex flex-col justify-end">
           <button
@@ -125,7 +123,7 @@ function TabButton({
   active: boolean;
   onClick: () => void;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }) {
   return (
     <button
