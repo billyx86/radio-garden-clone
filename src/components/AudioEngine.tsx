@@ -10,6 +10,7 @@ function isHlsUrl(url: string) {
 export function AudioEngine() {
   const ref = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const loadedId = useRef<string | null>(null);
   const setAudioEl = useRadioStore((s) => s.setAudioEl);
   const setStatus = useRadioStore((s) => s.setStatus);
   const volume = useRadioStore((s) => s.volume);
@@ -23,26 +24,27 @@ export function AudioEngine() {
     setAudioEl(el);
 
     const onPlaying = () => setStatus("playing");
-    const onWaiting = () => setStatus("loading");
+    const onWaiting = () => {
+      // Buffering mid-stream — don't flip to loading (that would re-fetch)
+      if (loadedId.current) return;
+      setStatus("loading");
+    };
     const onPause = () => {
       if (!el.ended) setStatus("paused");
     };
     const onError = () =>
       setStatus("error", "Stream failed to load. Try another station.");
-    const onStalled = () => setStatus("loading");
 
     el.addEventListener("playing", onPlaying);
     el.addEventListener("waiting", onWaiting);
     el.addEventListener("pause", onPause);
     el.addEventListener("error", onError);
-    el.addEventListener("stalled", onStalled);
 
     return () => {
       el.removeEventListener("playing", onPlaying);
       el.removeEventListener("waiting", onWaiting);
       el.removeEventListener("pause", onPause);
       el.removeEventListener("error", onError);
-      el.removeEventListener("stalled", onStalled);
       hlsRef.current?.destroy();
       hlsRef.current = null;
       setAudioEl(null);
@@ -55,14 +57,21 @@ export function AudioEngine() {
     el.volume = muted ? 0 : volume;
   }, [volume, muted]);
 
+  // Load a new station when selection changes
   useEffect(() => {
     const el = ref.current;
     if (!el || !current) return;
-    if (status !== "loading") return;
+    if (loadedId.current === current.id && status !== "loading") return;
+    // Only (re)load when station changes OR explicit play after pause/error
+    const needLoad =
+      loadedId.current !== current.id ||
+      (status === "loading" && (el.paused || el.error));
+    if (!needLoad) return;
 
     const url = current.streamUrl;
     hlsRef.current?.destroy();
     hlsRef.current = null;
+    loadedId.current = current.id;
 
     const tryPlay = () => {
       el.play()
@@ -72,8 +81,8 @@ export function AudioEngine() {
             err instanceof Error ? err.message : "Could not play stream";
           const lower = msg.toLowerCase();
           if (
-            lower.includes("user didn't interact") ||
             lower.includes("not allowed") ||
+            lower.includes("user didn't interact") ||
             lower.includes("play()")
           ) {
             setStatus("paused");
@@ -82,6 +91,8 @@ export function AudioEngine() {
           }
         });
     };
+
+    setStatus("loading");
 
     if (isHlsUrl(url)) {
       if (el.canPlayType("application/vnd.apple.mpegurl")) {
@@ -96,6 +107,7 @@ export function AudioEngine() {
         hls.on(Hls.Events.MANIFEST_PARSED, () => tryPlay());
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (data.fatal) {
+            loadedId.current = null;
             setStatus(
               "error",
               "Stream failed to load. Try another station."
@@ -110,7 +122,21 @@ export function AudioEngine() {
       el.load();
       tryPlay();
     }
-  }, [current, status, setStatus]);
+  }, [current?.id, status, setStatus, current]);
+
+  // Resume from paused without reloading
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !current) return;
+    if (status !== "loading") return;
+    if (loadedId.current !== current.id) return;
+    if (!el.src && !hlsRef.current) return;
+    if (!el.paused) return;
+
+    el.play()
+      .then(() => setStatus("playing"))
+      .catch(() => setStatus("paused"));
+  }, [status, current, setStatus]);
 
   return <audio ref={ref} preload="none" playsInline className="hidden" />;
 }
