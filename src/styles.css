@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --color-space: oklch(0.14 0.02 260);
+  --color-space-deep: oklch(0.1 0.02 260);
+  --color-glass: oklch(0.22 0.03 260 / 0.55);
+  --color-glass-border: oklch(0.7 0.04 260 / 0.14);
+  --color-radio: oklch(0.82 0.18 145);
+  --color-radio-dim: oklch(0.65 0.14 145);
+  --color-radio-glow: oklch(0.82 0.18 145 / 0.35);
+  --color-mist: oklch(0.92 0.02 260);
+  --color-muted: oklch(0.72 0.03 260);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-space-deep);
+  color: var(--color-mist);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+/* Cosmic ambient background when canvas not yet mounted */
+.app-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, oklch(0.22 0.06 260 / 0.5), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, oklch(0.25 0.08 200 / 0.2), transparent),
+    var(--color-space-deep);
+}
+
+.glass {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Living green radio pulse */
+@keyframes radio-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--color-radio-glow);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 12px 4px var(--color-radio-glow);
+    opacity: 0.85;
+  }
+}
+
+.radio-dot-live {
+  animation: radio-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out both;
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-slow {
+  animation: spin-slow 1.2s linear infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .radio-dot-live,
+  .animate-fade-up,
+  .spin-slow {
+    animation: none !important;
+  }
+}
+
+/* Scrollbar for sheets */
+.sheet-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sheet-scroll::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0.04 260 / 0.4);
+  border-radius: 4px;
+}
+
+/* Hide number input spinners */
+input[type="range"] {
+  accent-color: oklch(0.82 0.18 145);
+}
