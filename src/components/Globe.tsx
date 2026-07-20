@@ -1,6 +1,7 @@
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { stations, type Station } from "../data/stations";
 import { cameraPosForStation, latLngToVector3 } from "../lib/geo";
@@ -16,8 +17,6 @@ function prefersReducedMotion() {
 
 /** Procedural earth: deep ocean blue with soft continent-like noise. */
 function Earth() {
-  const matRef = useRef<THREE.MeshStandardMaterial>(null);
-
   const texture = useMemo(() => {
     const size = 512;
     const canvas = document.createElement("canvas");
@@ -25,7 +24,6 @@ function Earth() {
     canvas.height = size;
     const ctx = canvas.getContext("2d")!;
 
-    // Ocean base
     const grad = ctx.createLinearGradient(0, 0, size, size);
     grad.addColorStop(0, "#0b1f3a");
     grad.addColorStop(0.5, "#0d2847");
@@ -33,16 +31,15 @@ function Earth() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
 
-    // Simple continent blobs (stylized, not geographic accuracy)
     const continents: Array<[number, number, number, string]> = [
-      [0.22, 0.35, 55, "#1a4a3a"], // Americas-ish
+      [0.22, 0.35, 55, "#1a4a3a"],
       [0.18, 0.55, 40, "#1e4538"],
-      [0.48, 0.32, 50, "#1c4d3c"], // Europe/Africa
+      [0.48, 0.32, 50, "#1c4d3c"],
       [0.52, 0.48, 45, "#184436"],
-      [0.68, 0.38, 60, "#1a4a3a"], // Asia
+      [0.68, 0.38, 60, "#1a4a3a"],
       [0.75, 0.55, 35, "#1e4538"],
-      [0.82, 0.68, 28, "#164033"], // Australia
-      [0.15, 0.75, 22, "#143c30"], // Antarctica fringe
+      [0.82, 0.68, 28, "#164033"],
+      [0.15, 0.75, 22, "#143c30"],
     ];
 
     for (const [nx, ny, r, color] of continents) {
@@ -55,7 +52,7 @@ function Earth() {
         r
       );
       g.addColorStop(0, color);
-      g.addColorStop(0.7, color + "cc");
+      g.addColorStop(0.7, `${color}cc`);
       g.addColorStop(1, "transparent");
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -63,7 +60,6 @@ function Earth() {
       ctx.fill();
     }
 
-    // Speckle noise for texture
     const img = ctx.getImageData(0, 0, size, size);
     for (let i = 0; i < img.data.length; i += 4) {
       const n = (Math.random() - 0.5) * 12;
@@ -83,7 +79,6 @@ function Earth() {
     <mesh>
       <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
       <meshStandardMaterial
-        ref={matRef}
         map={texture}
         roughness={0.85}
         metalness={0.08}
@@ -118,7 +113,6 @@ function StationMarker({
   active: boolean;
   onSelect: (s: Station) => void;
 }) {
-  const ref = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const pos = useMemo(
     () => latLngToVector3(station.lat, station.lng, MARKER_RADIUS),
@@ -157,7 +151,7 @@ function StationMarker({
           depthWrite={false}
         />
       </mesh>
-      <mesh ref={ref}>
+      <mesh>
         <sphereGeometry args={[active ? 0.012 : 0.008, 10, 10]} />
         <meshBasicMaterial color={active ? "#b8ffcc" : "#6dff9e"} />
       </mesh>
@@ -211,18 +205,16 @@ function CameraFlyer() {
 function AutoRotate({
   controlsRef,
 }: {
-  controlsRef: React.RefObject<React.ComponentRef<typeof OrbitControls> | null>;
+  controlsRef: RefObject<OrbitControlsImpl | null>;
 }) {
   const userInteracting = useRadioStore((s) => s.userInteracting);
   const reduced = useRef(prefersReducedMotion());
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     const controls = controlsRef.current;
     if (!controls || reduced.current) return;
     controls.autoRotate = !userInteracting;
     controls.autoRotateSpeed = 0.35;
-    // keep damping alive
-    void delta;
   });
 
   return null;
@@ -232,9 +224,7 @@ function Scene() {
   const selectStation = useRadioStore((s) => s.selectStation);
   const current = useRadioStore((s) => s.current);
   const setUserInteracting = useRadioStore((s) => s.setUserInteracting);
-  const controlsRef = useRef<React.ComponentRef<typeof OrbitControls> | null>(
-    null
-  );
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   return (
     <>
