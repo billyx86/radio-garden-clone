@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -209,7 +209,7 @@ function CameraFlyer() {
 function AutoRotate({
   controlsRef,
 }: {
-  controlsRef: React.MutableRefObject<ControlsHandle | null>;
+  controlsRef: MutableRefObject<ControlsHandle | null>;
 }) {
   const userInteracting = useRadioStore((s) => s.userInteracting);
   const reduced = useRef(prefersReducedMotion());
