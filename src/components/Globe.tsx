@@ -1,7 +1,6 @@
-import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 import { stations, type Station } from "../data/stations";
 import { cameraPosForStation, latLngToVector3 } from "../lib/geo";
@@ -9,6 +8,11 @@ import { useRadioStore } from "../store/radio";
 
 const GLOBE_RADIUS = 1;
 const MARKER_RADIUS = 1.012;
+
+type ControlsHandle = {
+  autoRotate: boolean;
+  autoRotateSpeed: number;
+};
 
 function prefersReducedMotion() {
   if (typeof window === "undefined") return false;
@@ -205,7 +209,7 @@ function CameraFlyer() {
 function AutoRotate({
   controlsRef,
 }: {
-  controlsRef: RefObject<OrbitControlsImpl | null>;
+  controlsRef: React.MutableRefObject<ControlsHandle | null>;
 }) {
   const userInteracting = useRadioStore((s) => s.userInteracting);
   const reduced = useRef(prefersReducedMotion());
@@ -224,7 +228,7 @@ function Scene() {
   const selectStation = useRadioStore((s) => s.selectStation);
   const current = useRadioStore((s) => s.current);
   const setUserInteracting = useRadioStore((s) => s.setUserInteracting);
-  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const controlsRef = useRef<ControlsHandle | null>(null);
 
   return (
     <>
@@ -259,7 +263,7 @@ function Scene() {
       <AutoRotate controlsRef={controlsRef} />
 
       <OrbitControls
-        ref={controlsRef}
+        ref={controlsRef as never}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
