@@ -93,8 +93,11 @@ export const useRadioStore = create<RadioState>()(
       toggleMute: () => {
         const { audioEl, muted, volume } = get();
         const next = !muted;
-        if (audioEl) audioEl.volume = next ? 0 : volume;
-        set({ muted: next });
+        // If the volume slider was dragged to 0 (which auto-mutes),
+        // "restoring" 0 would leave the user in permanent silence.
+        const restoreVol = volume > 0 ? volume : 0.5;
+        if (audioEl) audioEl.volume = next ? 0 : restoreVol;
+        set(next ? { muted: true } : { muted: false, volume: restoreVol });
       },
 
       setStatus: (s, err = null) => set({ status: s, errorMessage: err }),
