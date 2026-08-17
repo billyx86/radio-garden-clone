@@ -111,10 +111,6 @@ export const stations: Station[] = [
   { id: "bamako-goa", name: "SomaFM Suburbs of Goa", city: "Bamako", country: "Mali", lat: 12.6392, lng: -8.0029, streamUrl: "https://ice1.somafm.com/suburbsofgoa-128-mp3", tags: ["world"] },
 ];
 
-export function getStationById(id: string): Station | undefined {
-  return stations.find((s) => s.id === id);
-}
-
 export function searchStations(query: string): Station[] {
   const q = query.trim().toLowerCase();
   if (!q) return stations;
