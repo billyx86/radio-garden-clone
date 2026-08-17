@@ -30,6 +30,7 @@ Then open the app (dev server binds all interfaces on port 8080).
 ```bash
 npm run build    # production build → dist/
 npm run typecheck
+npm test         # vitest suite (34 tests over the pure-logic modules)
 ```
 
 ## Stack
@@ -67,6 +68,8 @@ src/
 ```
 
 ## Notes
+
+CI runs typecheck, tests, and a production build on every push and PR.
 
 Some streams may be geo-restricted or temporarily offline — try another city.
 Deploy `dist/` to any static host (Vercel, Netlify, Cloudflare Pages).
