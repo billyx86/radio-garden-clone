@@ -85,7 +85,6 @@ export const stations: Station[] = [
   { id: "tokyo-chill", name: "SomaFM Space Station", city: "Tokyo", country: "Japan", lat: 35.6762, lng: 139.6503, streamUrl: "https://ice1.somafm.com/spacestation-128-mp3", tags: ["electronic"] },
   { id: "seoul-indie", name: "SomaFM Indie Pop Rocks", city: "Seoul", country: "South Korea", lat: 37.5665, lng: 126.978, streamUrl: "https://ice1.somafm.com/indiepop-128-mp3", tags: ["indie"] },
   { id: "beijing-defcon", name: "SomaFM DEF CON", city: "Beijing", country: "China", lat: 39.9042, lng: 116.4074, streamUrl: "https://ice1.somafm.com/defcon-128-mp3", tags: ["electronic"] },
-  { id: "hk-rinse", name: "Rinse FM", city: "Hong Kong", country: "China", lat: 22.3193, lng: 114.1694, streamUrl: "https://streamer-uk.rinse.fm:8443/stream", tags: ["electronic"] },
   { id: "radio-mirchi", name: "Radio Mirchi", city: "Mumbai", country: "India", lat: 19.076, lng: 72.8777, streamUrl: "https://playerservices.streamtheworld.com/api/livestream-redirect/MUMBAI_HINDI_ESTAAC.aac", tags: ["bollywood"] },
   { id: "bangkok-beat", name: "SomaFM Beat Blender", city: "Bangkok", country: "Thailand", lat: 13.7563, lng: 100.5018, streamUrl: "https://ice1.somafm.com/beatblender-128-mp3", tags: ["electronic"] },
   { id: "jakarta-soul", name: "SomaFM Underground 80s", city: "Jakarta", country: "Indonesia", lat: -6.2088, lng: 106.8456, streamUrl: "https://ice1.somafm.com/u80s-128-mp3", tags: ["80s"] },
@@ -111,10 +110,6 @@ export const stations: Station[] = [
   { id: "casablanca-world", name: "SomaFM World Party", city: "Casablanca", country: "Morocco", lat: 33.5731, lng: -7.5898, streamUrl: "https://ice1.somafm.com/worldparty-128-mp3", tags: ["world"] },
   { id: "bamako-goa", name: "SomaFM Suburbs of Goa", city: "Bamako", country: "Mali", lat: 12.6392, lng: -8.0029, streamUrl: "https://ice1.somafm.com/suburbsofgoa-128-mp3", tags: ["world"] },
 ];
-
-export function getStationById(id: string): Station | undefined {
-  return stations.find((s) => s.id === id);
-}
 
 export function searchStations(query: string): Station[] {
   const q = query.trim().toLowerCase();
