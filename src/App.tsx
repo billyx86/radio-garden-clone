@@ -1,30 +1,35 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
-import { GlobeClient } from "./components/Globe";
 import { Player } from "./components/Player";
 import { Search } from "./components/Search";
 import { AudioEngine } from "./components/AudioEngine";
 
+/**
+ * three.js is by far the heaviest dependency here. The globe is lazy-loaded
+ * so the 2D UI (search, player, station list) renders first and the 3D scene
+ * streams in behind it (#9).
+ */
+const GlobeClient = lazy(
+  () => import("./components/Globe").then((m) => ({ default: m.GlobeClient })),
+);
+
+function GlobeFallback() {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
+      <Loader2 className="h-8 w-8 text-radio spin-slow" />
+      <p className="text-sm text-muted">Spinning up the globe…</p>
+    </div>
+  );
+}
+
 export default function App() {
-  const [ready, setReady] = useState(false);
-
-  // Client-only mount for WebGL canvas (SSR-safe pattern)
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
   return (
     <div className="app-shell">
       <AudioEngine />
 
-      {!ready ? (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="h-8 w-8 text-radio spin-slow" />
-          <p className="text-sm text-muted">Spinning up the globe…</p>
-        </div>
-      ) : (
+      <Suspense fallback={<GlobeFallback />}>
         <GlobeClient />
-      )}
+      </Suspense>
 
       {/* Soft vignette for UI readability */}
       <div
