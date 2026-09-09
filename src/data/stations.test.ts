@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, searchStations, stationFacets, stations } from "./stations";
+import { applyFilters, searchFacets, stationFacets, stations } from "./stations";
 
 describe("stations dataset integrity", () => {
   it("has a healthy number of stations", () => {
@@ -54,26 +54,23 @@ describe("stations dataset integrity", () => {
   });
 });
 
-describe("searchStations", () => {
-  it("returns all stations for an empty or whitespace query", () => {
-    expect(searchStations("")).toHaveLength(stations.length);
-    expect(searchStations("   ")).toHaveLength(stations.length);
-  });
-
+describe("applyFilters", () => {
   it("matches by city (case-insensitive)", () => {
-    const results = searchStations("paris");
+    const results = applyFilters(stations, "paris", null, null);
     expect(results.length).toBeGreaterThan(0);
     expect(results.every((s) => s.city.toLowerCase().includes("paris"))).toBe(true);
   });
 
   it("matches by country", () => {
-    const results = searchStations("germany");
+    const results = applyFilters(stations, "germany", null, null);
     expect(results.length).toBeGreaterThan(0);
-    expect(results.every((s) => s.country.toLowerCase().includes("germany"))).toBe(true);
+    expect(
+      results.every((s) => s.country.toLowerCase().includes("germany")),
+    ).toBe(true);
   });
 
   it("matches by tag", () => {
-    const results = searchStations("jazz");
+    const results = applyFilters(stations, "jazz", null, null);
     expect(results.length).toBeGreaterThan(0);
     expect(
       results.every((s) => s.tags?.some((t) => t.toLowerCase().includes("jazz"))),
@@ -81,13 +78,10 @@ describe("searchStations", () => {
   });
 
   it("returns no results for a nonsense query", () => {
-    expect(searchStations("zzzzqqqqxx")).toEqual([]);
+    expect(applyFilters(stations, "zzzzqqqqxx", null, null)).toEqual([]);
   });
-});
 
-describe("applyFilters", () => {
-  it("matches a bare query the same way searchStations does", () => {
-    expect(applyFilters(stations, "paris", null, null)).toEqual(searchStations("paris"));
+  it("returns all stations for an empty query with no filters", () => {
     expect(applyFilters(stations, "", null, null)).toHaveLength(stations.length);
   });
 
@@ -167,5 +161,70 @@ describe("stationFacets", () => {
     const subset = stations.filter((s) => s.country === "Germany");
     const { regions } = stationFacets(subset);
     expect(regions).toEqual(["Germany"]);
+  });
+});
+
+describe("searchFacets", () => {
+  it("with no active filters, matches the full stationFacets output", () => {
+    const full = searchFacets(stations, "", null, null);
+    const base = stationFacets(stations);
+    expect(full.genres).toEqual(base.genres);
+    expect(full.regions).toEqual(base.regions);
+  });
+
+  it("narrows the genre row to genres present in the selected region", () => {
+    // A region with a distinctive genre mix: Germany's jazz.
+    const germany = stations.filter((s) => s.country === "Germany");
+    const germanyGenres = new Set(germany.flatMap((s) => s.tags ?? []));
+    const { genres } = searchFacets(stations, "", null, "Germany");
+    // Every offered genre must exist for at least one German station.
+    expect(genres.every((g) => germanyGenres.has(g))).toBe(true);
+  });
+
+  it("narrows the region row to regions that have the selected genre", () => {
+    const jazzRegions = new Set(
+      stations.filter((s) => (s.tags ?? []).includes("jazz")).map((s) => s.country)
+    );
+    const { regions } = searchFacets(stations, "", "jazz", null);
+    expect(regions.every((r) => jazzRegions.has(r))).toBe(true);
+    expect(regions.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the selected genre visible even when it is low-count", () => {
+    // "jazz" exists but pick a region where jazz is present; the selected
+    // genre must still be offered so the user can clear it.
+    const jazzCountry = stations
+      .find((s) => (s.tags ?? []).includes("jazz"))!
+      .country;
+    const { genres } = searchFacets(stations, "", "jazz", jazzCountry);
+    expect(genres).toContain("jazz");
+  });
+
+  it("keeps the selected region visible even when it is low-count", () => {
+    const { regions } = searchFacets(stations, "", null, "Germany");
+    expect(regions).toContain("Germany");
+  });
+
+  it("ignores a query that has no matches in one dimension without hiding the other's selection", () => {
+    // A query that only matches by station name; the region selection must survive.
+    const { regions } = searchFacets(stations, "NPR", null, "Germany");
+    expect(regions).toContain("Germany");
+  });
+
+  it("returns no genre for a region that has no tagged stations", () => {
+    // Synthetic dataset: a station with no tags in a region.
+    const items = [
+      {
+        id: "a",
+        name: "A",
+        city: "X",
+        country: "Nowhere",
+        lat: 0,
+        lng: 0,
+        streamUrl: "https://example.com/a",
+      },
+    ];
+    const { genres } = searchFacets(items, "", null, "Nowhere");
+    expect(genres).toEqual([]);
   });
 });

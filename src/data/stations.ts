@@ -111,10 +111,6 @@ export const stations: Station[] = [
   { id: "bamako-goa", name: "SomaFM Suburbs of Goa", city: "Bamako", country: "Mali", lat: 12.6392, lng: -8.0029, streamUrl: "https://ice1.somafm.com/suburbsofgoa-128-mp3", tags: ["world"] },
 ];
 
-export function searchStations(query: string): Station[] {
-  return applyFilters(stations, query, null, null);
-}
-
 /**
  * Text query (matched against name, city, country and tags) plus optional
  * genre (exact tag match) and region (exact country match) filters.
@@ -167,4 +163,31 @@ export function stationFacets(items: Station[], maxGenres = 12, maxRegions = 16)
     genres: byCount(genreCounts).slice(0, maxGenres),
     regions: byCount(regionCounts).slice(0, maxRegions),
   };
+}
+
+/**
+ * Cross-filtered facets for the search sheet. Each chip row is computed from
+ * the stations that already match the *other* active filters, so the chips only
+ * offer values that can actually produce results (selecting a region hides
+ * genres that no station in that region has, and vice versa). The row's own
+ * filter is ignored so the currently selected chip never disappears. The
+ * selected value is force-included (first) so a low-count pick stays tappable.
+ */
+export function searchFacets(
+  items: Station[],
+  query: string,
+  genre: string | null,
+  region: string | null
+): StationFacets {
+  const genreBase = applyFilters(items, query, null, region);
+  const regionBase = applyFilters(items, query, genre, null);
+  const genres = ensurePresent(stationFacets(genreBase).genres, genre);
+  const regions = ensurePresent(stationFacets(regionBase).regions, region);
+  return { genres, regions };
+}
+
+/** Prepend `selected` to `list` (once) if it is not already present. */
+function ensurePresent(list: string[], selected: string | null): string[] {
+  if (selected && !list.includes(selected)) return [selected, ...list];
+  return list;
 }
