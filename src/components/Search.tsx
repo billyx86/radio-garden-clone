@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Heart, Search as SearchIcon, X } from "lucide-react";
-import { stations, applyFilters, stationFacets } from "../data/stations";
+import { stations, applyFilters, searchFacets } from "../data/stations";
 import { useRadioStore } from "../store/radio";
 import { StationList } from "./StationList";
 
@@ -14,7 +14,10 @@ export function Search() {
   const [genre, setGenre] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
 
-  const facets = useMemo(() => stationFacets(stations), []);
+  const facets = useMemo(
+    () => searchFacets(stations, query, genre, region),
+    [query, genre, region]
+  );
 
   const results = useMemo(() => {
     const base = applyFilters(stations, query, genre, region);
@@ -127,7 +130,6 @@ export function Search() {
                   onClick={() => {
                     setGenre(null);
                     setRegion(null);
-                    setSearchQuery("");
                   }}
                   className="text-xs font-medium text-radio hover:underline"
                 >
