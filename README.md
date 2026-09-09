@@ -11,6 +11,7 @@ Mobile-first **3D globe** of live radio stations — a cosmic Radio Garden-style
 - Tap a station → camera flies in + live stream plays
 - Sticky bottom player (play/pause, volume, favorites)
 - Search by city / station / country (mobile bottom sheet)
+- Genre + region filter chips that cross-filter each other
 - Favorites + volume persisted in `localStorage`
 - Auto-rotate when idle; respects `prefers-reduced-motion`
 - Full-bleed mobile UI, 44px touch targets, safe-area insets
@@ -30,7 +31,7 @@ Then open the app (dev server binds all interfaces on port 8080).
 ```bash
 npm run build    # production build → dist/
 npm run typecheck
-npm test         # vitest suite (34 tests over the pure-logic modules)
+npm test         # vitest suite (52 tests over the pure-logic modules)
 ```
 
 ## Stack
@@ -60,7 +61,7 @@ src/
     Search.tsx        # Mobile search sheet
     StationList.tsx
     AudioEngine.tsx   # Stream attach (mp3/aac/HLS)
-  data/stations.ts    # Curated worldwide stations
+  data/stations.ts    # Curated worldwide stations + search/filter/facet logic
   store/radio.ts
   lib/geo.ts          # lat/lng → Vector3
   App.tsx
