@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchStations, stations } from "./stations";
+import { applyFilters, searchStations, stationFacets, stations } from "./stations";
 
 describe("stations dataset integrity", () => {
   it("has a healthy number of stations", () => {
@@ -82,5 +82,90 @@ describe("searchStations", () => {
 
   it("returns no results for a nonsense query", () => {
     expect(searchStations("zzzzqqqqxx")).toEqual([]);
+  });
+});
+
+describe("applyFilters", () => {
+  it("matches a bare query the same way searchStations does", () => {
+    expect(applyFilters(stations, "paris", null, null)).toEqual(searchStations("paris"));
+    expect(applyFilters(stations, "", null, null)).toHaveLength(stations.length);
+  });
+
+  it("filters by exact genre (tag) match", () => {
+    const jazz = applyFilters(stations, "", "jazz", null);
+    expect(jazz.length).toBeGreaterThan(0);
+    expect(jazz.length).toBeLessThan(stations.length);
+    expect(jazz.every((s) => (s.tags ?? []).includes("jazz"))).toBe(true);
+  });
+
+  it("does not partial-match genres (\"amb\" does not hit \"ambient\")", () => {
+    expect(applyFilters(stations, "", "amb", null)).toEqual([]);
+  });
+
+  it("filters by exact region (country) match", () => {
+    const germany = applyFilters(stations, "", null, "Germany");
+    expect(germany.length).toBeGreaterThan(0);
+    expect(germany.every((s) => s.country === "Germany")).toBe(true);
+  });
+
+  it("ANDs query, genre and region together", () => {
+    const both = applyFilters(stations, "", "pop", "Germany");
+    expect(both.length).toBeGreaterThan(0);
+    expect(both.every((s) => s.country === "Germany" && (s.tags ?? []).includes("pop"))).toBe(
+      true,
+    );
+    // strictly a subset of each single filter
+    const popOnly = applyFilters(stations, "", "pop", null);
+    const germanyOnly = applyFilters(stations, "", null, "Germany");
+    expect(both.length).toBeLessThanOrEqual(popOnly.length);
+    expect(both.length).toBeLessThanOrEqual(germanyOnly.length);
+  });
+
+  it("query narrows the genre+region result set", () => {
+    const base = applyFilters(stations, "", null, "UK");
+    const narrowed = applyFilters(stations, "london", null, "UK");
+    expect(narrowed.length).toBeGreaterThan(0);
+    expect(narrowed.length).toBeLessThanOrEqual(base.length);
+    expect(narrowed.every((s) => s.city.toLowerCase().includes("london"))).toBe(true);
+  });
+
+  it("returns [] when filters are mutually exclusive", () => {
+    // No jazz station in the dataset is also in Germany + London.
+    expect(applyFilters(stations, "zzzzqqqqxx", "jazz", "Germany")).toEqual([]);
+  });
+
+  it("treats null and empty-string genre/region as no filter", () => {
+    expect(applyFilters(stations, "paris", null, null)).toEqual(
+      applyFilters(stations, "paris", "", ""),
+    );
+  });
+});
+
+describe("stationFacets", () => {
+  it("lists the most common genres first, capped at the max", () => {
+    const { genres } = stationFacets(stations, 5, 16);
+    expect(genres).toHaveLength(5);
+    // "pop" is the single most common tag in the dataset
+    expect(genres[0]).toBe("pop");
+  });
+
+  it("lists the most common regions first, capped at the max", () => {
+    const { regions } = stationFacets(stations, 12, 3);
+    expect(regions).toHaveLength(3);
+    expect(regions[0]).toBe("USA");
+  });
+
+  it("only offers values that exist in the dataset", () => {
+    const { genres, regions } = stationFacets(stations);
+    const allTags = new Set(stations.flatMap((s) => s.tags ?? []));
+    const allCountries = new Set(stations.map((s) => s.country));
+    expect(genres.every((g) => allTags.has(g))).toBe(true);
+    expect(regions.every((r) => allCountries.has(r))).toBe(true);
+  });
+
+  it("respects a smaller item set (subset of stations)", () => {
+    const subset = stations.filter((s) => s.country === "Germany");
+    const { regions } = stationFacets(subset);
+    expect(regions).toEqual(["Germany"]);
   });
 });

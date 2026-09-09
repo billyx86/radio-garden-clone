@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Heart, Search as SearchIcon, X } from "lucide-react";
-import { stations, searchStations } from "../data/stations";
+import { stations, applyFilters, stationFacets } from "../data/stations";
 import { useRadioStore } from "../store/radio";
 import { StationList } from "./StationList";
 
@@ -11,16 +11,21 @@ export function Search() {
   const setSearchQuery = useRadioStore((s) => s.setSearchQuery);
   const favorites = useRadioStore((s) => s.favorites);
   const [tab, setTab] = useState<"all" | "favorites">("all");
+  const [genre, setGenre] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>(null);
+
+  const facets = useMemo(() => stationFacets(stations), []);
 
   const results = useMemo(() => {
+    const base = applyFilters(stations, query, genre, region);
     if (tab === "favorites") {
       const favSet = new Set(favorites);
-      const favStations = stations.filter((s) => favSet.has(s.id));
-      if (!query.trim()) return favStations;
-      return searchStations(query).filter((s) => favSet.has(s.id));
+      return base.filter((s) => favSet.has(s.id));
     }
-    return searchStations(query);
-  }, [query, tab, favorites]);
+    return base;
+  }, [query, tab, favorites, genre, region]);
+
+  const filtersActive = genre !== null || region !== null;
 
   return (
     <>
@@ -97,6 +102,40 @@ export function Search() {
               />
             </div>
 
+            <div className="space-y-2 px-4 pb-2">
+              <ChipRow
+                label="Genre"
+                options={facets.genres}
+                value={genre}
+                onToggle={(g) => setGenre(g === genre ? null : g)}
+              />
+              <ChipRow
+                label="Region"
+                options={facets.regions}
+                value={region}
+                onToggle={(r) => setRegion(r === region ? null : r)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between px-4 pb-1 pt-2">
+              <span className="text-xs text-muted">
+                {results.length} {results.length === 1 ? "station" : "stations"}
+              </span>
+              {(filtersActive || query) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGenre(null);
+                    setRegion(null);
+                    setSearchQuery("");
+                  }}
+                  className="text-xs font-medium text-radio hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+
             <div className="sheet-scroll min-h-0 flex-1 overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <StationList
                 items={results}
@@ -138,5 +177,42 @@ function TabButton({
       {icon}
       {label}
     </button>
+  );
+}
+
+function ChipRow({
+  label,
+  options,
+  value,
+  onToggle,
+}: {
+  label: string;
+  options: string[];
+  value: string | null;
+  onToggle: (option: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-11 shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted/80">
+        {label}
+      </span>
+      <div className="sheet-scroll -mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 pb-0.5">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            aria-pressed={value === option}
+            onClick={() => onToggle(option)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium capitalize transition ${
+              value === option
+                ? "bg-radio/20 text-radio ring-1 ring-radio/40"
+                : "bg-white/5 text-muted hover:bg-white/10"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

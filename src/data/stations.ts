@@ -112,13 +112,59 @@ export const stations: Station[] = [
 ];
 
 export function searchStations(query: string): Station[] {
+  return applyFilters(stations, query, null, null);
+}
+
+/**
+ * Text query (matched against name, city, country and tags) plus optional
+ * genre (exact tag match) and region (exact country match) filters.
+ * The query and the two filters combine with AND.
+ */
+export function applyFilters(
+  items: Station[],
+  query: string,
+  genre: string | null,
+  region: string | null
+): Station[] {
   const q = query.trim().toLowerCase();
-  if (!q) return stations;
-  return stations.filter(
-    (s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.city.toLowerCase().includes(q) ||
-      s.country.toLowerCase().includes(q) ||
-      s.tags?.some((t) => t.includes(q))
-  );
+  return items.filter((s) => {
+    if (q) {
+      const textHit =
+        s.name.toLowerCase().includes(q) ||
+        s.city.toLowerCase().includes(q) ||
+        s.country.toLowerCase().includes(q) ||
+        s.tags?.some((t) => t.toLowerCase().includes(q));
+      if (!textHit) return false;
+    }
+    if (region && s.country !== region) return false;
+    if (genre && !(s.tags ?? []).includes(genre)) return false;
+    return true;
+  });
+}
+
+export type StationFacets = {
+  genres: string[];
+  regions: string[];
+};
+
+/**
+ * The genres and regions worth offering as filter chips, most common first
+ * (ties broken alphabetically), capped so the chip rows stay scannable.
+ * Longer-tail values remain reachable through the text query.
+ */
+export function stationFacets(items: Station[], maxGenres = 12, maxRegions = 16): StationFacets {
+  const genreCounts = new Map<string, number>();
+  const regionCounts = new Map<string, number>();
+  for (const s of items) {
+    for (const t of s.tags ?? []) genreCounts.set(t, (genreCounts.get(t) ?? 0) + 1);
+    regionCounts.set(s.country, (regionCounts.get(s.country) ?? 0) + 1);
+  }
+  const byCount = (m: Map<string, number>) =>
+    [...m.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([key]) => key);
+  return {
+    genres: byCount(genreCounts).slice(0, maxGenres),
+    regions: byCount(regionCounts).slice(0, maxRegions),
+  };
 }
