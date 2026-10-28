@@ -23,6 +23,12 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      launchOptions: {
+        // Stream playback tests drive a real <audio> element. Headless
+        // Chromium would otherwise block el.play() without a user gesture;
+        // this lets the player reach the "playing" state deterministically.
+        args: ["--autoplay-policy=no-user-gesture-required"],
+      },
     },
   ],
   webServer: {

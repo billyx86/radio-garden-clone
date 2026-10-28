@@ -126,6 +126,7 @@ export function Player() {
         <div className="mt-2.5 flex items-center gap-2 px-1">
           <button
             type="button"
+            data-testid="player-mute"
             onClick={toggleMute}
             aria-label={muted ? "Unmute" : "Mute"}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-white/5"
@@ -138,6 +139,7 @@ export function Player() {
           </button>
           <input
             type="range"
+            data-testid="player-volume"
             min={0}
             max={1}
             step={0.01}

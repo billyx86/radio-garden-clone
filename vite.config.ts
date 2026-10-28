@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -10,6 +10,12 @@ export default defineConfig({
   server: { host: "0.0.0.0", port, strictPort: true },
   preview: { host: "0.0.0.0", port, strictPort: true },
   plugins: [react(), tailwindcss()],
+  test: {
+    // Unit tests live in src/; e2e/ is Playwright's turf (see
+    // playwright.config.ts) and must never be collected by vitest.
+    include: ["src/**/*.test.ts"],
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
+  },
   build: {
     rollupOptions: {
       output: {
