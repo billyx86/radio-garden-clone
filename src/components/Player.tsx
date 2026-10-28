@@ -20,7 +20,10 @@ export function Player() {
   const setVolume = useRadioStore((s) => s.setVolume);
   const toggleMute = useRadioStore((s) => s.toggleMute);
   const toggleFavorite = useRadioStore((s) => s.toggleFavorite);
-  const isFavorite = useRadioStore((s) => s.isFavorite);
+  // Reactive favorite check: select a value derived from the favorites
+  // array so toggling re-renders the button (a non-reactive get()-based
+  // selector would show a stale "Add favorite" state).
+  const fav = useRadioStore((s) => s.favorites.includes(s.current?.id ?? ""));
 
   if (!current) {
     return (
@@ -45,7 +48,6 @@ export function Player() {
     );
   }
 
-  const fav = isFavorite(current.id);
   const isLoading = status === "loading";
   const isPlaying = status === "playing";
   const isError = status === "error";
