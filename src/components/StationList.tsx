@@ -36,6 +36,9 @@ export function StationList({ items, emptyLabel = "No stations found" }: Props) 
             >
               <button
                 type="button"
+                data-testid="station-row"
+                data-station-id={station.id}
+                data-active={active ? "true" : "false"}
                 onClick={() => selectStation(station)}
                 className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-white/5 active:bg-white/10"
               >

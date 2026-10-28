@@ -20,11 +20,17 @@ export function Player() {
   const setVolume = useRadioStore((s) => s.setVolume);
   const toggleMute = useRadioStore((s) => s.toggleMute);
   const toggleFavorite = useRadioStore((s) => s.toggleFavorite);
-  const isFavorite = useRadioStore((s) => s.isFavorite);
+  // Reactive favorite check: select a value derived from the favorites
+  // array so toggling re-renders the button (a non-reactive get()-based
+  // selector would show a stale "Add favorite" state).
+  const fav = useRadioStore((s) => s.favorites.includes(s.current?.id ?? ""));
 
   if (!current) {
     return (
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 safe-bottom px-3 pb-3">
+      <div
+        data-testid="player-empty"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-30 safe-bottom px-3 pb-3"
+      >
         <div className="glass pointer-events-auto mx-auto flex max-w-lg items-center gap-3 rounded-2xl px-4 py-3 shadow-2xl">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-radio/15 text-radio">
             <Radio className="h-5 w-5" />
@@ -42,16 +48,23 @@ export function Player() {
     );
   }
 
-  const fav = isFavorite(current.id);
   const isLoading = status === "loading";
   const isPlaying = status === "playing";
   const isError = status === "error";
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 safe-bottom px-3 pb-3">
+    <div
+      data-testid="player"
+      data-status={status}
+      data-muted={muted || volume === 0 ? "true" : "false"}
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-30 safe-bottom px-3 pb-3"
+    >
       <div className="glass animate-fade-up pointer-events-auto mx-auto max-w-lg rounded-2xl px-3 py-3 shadow-2xl">
         {isError && (
-          <div className="mb-2 flex items-start gap-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300">
+          <div
+            data-testid="player-error"
+            className="mb-2 flex items-start gap-2 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-300"
+          >
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="leading-snug">
               {errorMessage || "Stream unavailable. Try another station."}
@@ -62,6 +75,7 @@ export function Player() {
         <div className="flex items-center gap-3">
           <button
             type="button"
+            data-testid="player-play"
             onClick={togglePlay}
             disabled={isLoading}
             aria-label={isPlaying ? "Pause" : "Play"}
@@ -83,7 +97,10 @@ export function Player() {
                   isPlaying ? "radio-dot-live" : ""
                 }`}
               />
-              <p className="truncate text-sm font-semibold tracking-tight text-mist">
+              <p
+                data-testid="player-station-name"
+                className="truncate text-sm font-semibold tracking-tight text-mist"
+              >
                 {current.name}
               </p>
             </div>
@@ -94,6 +111,8 @@ export function Player() {
 
           <button
             type="button"
+            data-testid="player-favorite"
+            data-favorite={fav ? "true" : "false"}
             onClick={() => toggleFavorite(current.id)}
             aria-label={fav ? "Remove favorite" : "Add favorite"}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-white/5 active:scale-95"
@@ -109,6 +128,7 @@ export function Player() {
         <div className="mt-2.5 flex items-center gap-2 px-1">
           <button
             type="button"
+            data-testid="player-mute"
             onClick={toggleMute}
             aria-label={muted ? "Unmute" : "Mute"}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted hover:bg-white/5"
@@ -121,6 +141,7 @@ export function Player() {
           </button>
           <input
             type="range"
+            data-testid="player-volume"
             min={0}
             max={1}
             step={0.01}

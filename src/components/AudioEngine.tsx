@@ -30,7 +30,11 @@ export function AudioEngine() {
       setStatus("loading");
     };
     const onPause = () => {
-      if (!el.ended) setStatus("paused");
+      if (!el.ended) {
+        // A native media error also fires a trailing "pause" event; don't
+        // let it mask the error state (the banner would vanish).
+        if (useRadioStore.getState().status !== "error") setStatus("paused");
+      }
     };
     const onError = () =>
       setStatus("error", "Stream failed to load. Try another station.");

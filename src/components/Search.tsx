@@ -36,6 +36,7 @@ export function Search() {
         <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2">
           <button
             type="button"
+            data-testid="search-trigger"
             onClick={() => setSearchOpen(true)}
             className="glass flex min-h-[44px] flex-1 items-center gap-2.5 rounded-2xl px-4 py-2.5 text-left shadow-lg transition active:scale-[0.99]"
           >
@@ -59,13 +60,17 @@ export function Search() {
             className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={() => setSearchOpen(false)}
           />
-          <div className="glass animate-fade-up relative flex max-h-[78dvh] flex-col rounded-t-3xl shadow-2xl">
+          <div
+            data-testid="search-sheet"
+            className="glass animate-fade-up relative flex max-h-[78dvh] flex-col rounded-t-3xl shadow-2xl"
+          >
             <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />
 
             <div className="flex items-center gap-2 px-4 pb-2 pt-3">
               <div className="flex min-h-[44px] flex-1 items-center gap-2 rounded-xl bg-white/5 px-3 ring-1 ring-white/10 focus-within:ring-radio/40">
                 <SearchIcon className="h-4 w-4 shrink-0 text-muted" />
                 <input
+                  data-testid="search-input"
                   autoFocus
                   value={query}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -102,6 +107,7 @@ export function Search() {
                 onClick={() => setTab("favorites")}
                 label="Favorites"
                 icon={<Heart className="h-3.5 w-3.5" />}
+                testId="search-tab-favorites"
               />
             </div>
 
@@ -121,7 +127,7 @@ export function Search() {
             </div>
 
             <div className="flex items-center justify-between px-4 pb-1 pt-2">
-              <span className="text-xs text-muted">
+              <span data-testid="search-results-count" className="text-xs text-muted">
                 {results.length} {results.length === 1 ? "station" : "stations"}
               </span>
               {(filtersActive || query) && (
@@ -160,15 +166,18 @@ function TabButton({
   onClick,
   label,
   icon,
+  testId,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   icon?: ReactNode;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       className={`flex min-h-[40px] items-center gap-1.5 rounded-full px-3.5 text-xs font-medium transition ${
         active
