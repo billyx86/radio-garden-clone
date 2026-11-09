@@ -133,7 +133,9 @@ export function Search() {
               {(filtersActive || query) && (
                 <button
                   type="button"
+                  data-testid="search-clear-filters"
                   onClick={() => {
+                    setSearchQuery("");
                     setGenre(null);
                     setRegion(null);
                   }}
