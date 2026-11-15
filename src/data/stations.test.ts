@@ -135,6 +135,58 @@ describe("applyFilters", () => {
   });
 });
 
+describe("applyFilters multi-word (AND) (#17)", () => {
+  it("matches a multi-word query where tokens live in different fields", () => {
+    // "news" is a tag and "paris" is the city on France Info — they never
+    // appear as a contiguous substring, so only AND tokenization finds it.
+    const ids = applyFilters(stations, "news paris", null, null).map((s) => s.id);
+    expect(ids).toContain("franceinfo");
+  });
+
+  it("matches 'soma ambient' to the ambient SomaFM stations only", () => {
+    const ids = applyFilters(stations, "soma ambient", null, null).map((s) => s.id);
+    // ambient SomaFM stations
+    expect(ids).toContain("somafm-gs");
+    expect(ids).toContain("somafm-drone");
+    expect(ids).toContain("cape-deep");
+    // a SomaFM station with no "ambient" tag must NOT match (proves AND, not OR)
+    expect(ids).not.toContain("somafm-agent");
+  });
+
+  it("still matches a contiguous multi-word query within one field", () => {
+    const ids = applyFilters(stations, "new york", null, null).map((s) => s.id);
+    expect(ids).toContain("wfmu");
+    expect(ids).toContain("wnyc");
+  });
+
+  it("requires EVERY token (AND): one unmatched token → no results", () => {
+    // No Paris station is tagged "ambient", so "paris ambient" is empty.
+    expect(applyFilters(stations, "paris ambient", null, null)).toEqual([]);
+    // A multi-word nonsense query stays empty.
+    expect(applyFilters(stations, "zzzzqqqqxx yyyywwww", null, null)).toEqual([]);
+  });
+
+  it("normalizes extra whitespace (leading/trailing and repeated spaces)", () => {
+    expect(applyFilters(stations, "  news   paris ", null, null)).toEqual(
+      applyFilters(stations, "news paris", null, null),
+    );
+  });
+
+  it("keeps single-word queries regression-safe (substring, any field)", () => {
+    const results = applyFilters(stations, "paris", null, null);
+    expect(results.length).toBeGreaterThan(0);
+    expect(
+      results.every(
+        (s) =>
+          s.name.toLowerCase().includes("paris") ||
+          s.city.toLowerCase().includes("paris") ||
+          s.country.toLowerCase().includes("paris") ||
+          s.tags?.some((t) => t.toLowerCase().includes("paris")),
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("stationFacets", () => {
   it("lists the most common genres first, capped at the max", () => {
     const { genres } = stationFacets(stations, 5, 16);

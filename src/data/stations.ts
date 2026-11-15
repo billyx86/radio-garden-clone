@@ -115,6 +115,12 @@ export const stations: Station[] = [
  * Text query (matched against name, city, country and tags) plus optional
  * genre (exact tag match) and region (exact country match) filters.
  * The query and the two filters combine with AND.
+ *
+ * The query is whitespace-tokenized and every token must match (AND
+ * semantics), each token substring-matched against the fields — so
+ * "news paris" finds a station whose city is Paris and whose tags include
+ * "news" even though the words are not contiguous in any single field.
+ * A single-token query behaves exactly as a plain substring match.
  */
 export function applyFilters(
   items: Station[],
@@ -122,14 +128,16 @@ export function applyFilters(
   genre: string | null,
   region: string | null
 ): Station[] {
-  const q = query.trim().toLowerCase();
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return items.filter((s) => {
-    if (q) {
-      const textHit =
-        s.name.toLowerCase().includes(q) ||
-        s.city.toLowerCase().includes(q) ||
-        s.country.toLowerCase().includes(q) ||
-        s.tags?.some((t) => t.toLowerCase().includes(q));
+    if (tokens.length) {
+      const textHit = tokens.every(
+        (t) =>
+          s.name.toLowerCase().includes(t) ||
+          s.city.toLowerCase().includes(t) ||
+          s.country.toLowerCase().includes(t) ||
+          s.tags?.some((tag) => tag.toLowerCase().includes(t)),
+      );
       if (!textHit) return false;
     }
     if (region && s.country !== region) return false;
