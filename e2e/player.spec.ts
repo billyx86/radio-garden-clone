@@ -200,4 +200,31 @@ test.describe("audio player (e2e, stubbed streams)", () => {
       page.locator('[data-testid="station-row"][data-station-id="kexp"]'),
     ).toBeVisible();
   });
+
+  test("reloading restores the last selected station without autoplaying (issue #18)", async ({
+    page,
+  }) => {
+    await bootApp(page);
+    await selectStation(page, "kexp", "KEXP");
+    await expect(player(page)).toHaveAttribute("data-status", "playing");
+
+    await page.reload();
+
+    // The station is back as the current selection (persisted id resolved
+    // against the in-repo dataset)…
+    await expect(player(page)).toBeVisible();
+    await expect(page.locator('[data-testid="player-station-name"]')).toHaveText(
+      "KEXP 90.3",
+    );
+    // …but it is NOT playing: restore is idle, not autoplay.
+    await expect(player(page)).toHaveAttribute("data-status", "idle");
+    const paused = await page
+      .locator("audio")
+      .evaluate((el) => (el as HTMLAudioElement).paused);
+    expect(paused).toBe(true);
+
+    // An explicit play resumes the stream.
+    await page.locator('[data-testid="player-play"]').click();
+    await expect(player(page)).toHaveAttribute("data-status", "playing");
+  });
 });
