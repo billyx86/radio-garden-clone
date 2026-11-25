@@ -175,27 +175,27 @@ export function AudioEngine() {
       el.play()
         .then(() => setStatus("playing"))
         .catch((err: unknown) => {
-          const msg =
-            err instanceof Error ? err.message : "Could not play stream";
-          const lower = msg.toLowerCase();
+          const msg = err instanceof Error ? err.message : "Could not play stream";
+          const name = (err as { name?: string } | null)?.name;
           if (
-            lower.includes("not allowed") ||
-            lower.includes("user didn't interact") ||
-            lower.includes("play()")
+            name === "NotAllowedError" ||
+            msg.toLowerCase().includes("not allowed") ||
+            msg.toLowerCase().includes("user didn't interact")
           ) {
             // Autoplay policy — the station is selected, just not playing.
             setStatus("paused");
           } else {
-            // Transient failure (aborted load, network blip): let the
-            // bounded retry decide. The element's "error" event is the
-            // same failure arriving as a second signal — scheduleRetry
-            // dedupes them.
+            // Transient failure (aborted load, network blip, unsupported
+            // source mid-rotation): let the bounded retry decide. The
+            // element's "error" event is the same failure arriving as a
+            // second signal — scheduleRetry dedupes them. A play() rejection
+            // with no media error recorded yet is biased toward "network":
+            // retrying a genuinely-broken URL once costs one reload, while
+            // missing a real blip reintroduces the exact bug this fixes.
             const code = (el.error as { code?: number } | null)?.code;
-            scheduleRetry(
-              "audio-network",
-              code === MEDIA_ERR_NETWORK,
-              retryAction
-            );
+            const isNetwork =
+              code === MEDIA_ERR_NETWORK || code === undefined;
+            scheduleRetry("audio-network", isNetwork, retryAction);
           }
         });
     };
