@@ -194,4 +194,42 @@ describe("useRadioStore", () => {
       expect(useRadioStore.getState().status).toBe("paused");
     });
   });
+
+  describe("last-station rehydration (issue #18)", () => {
+    function seedPersisted(state: Record<string, unknown>) {
+      memory["radio-garden-v1"] = JSON.stringify({ state, version: 0 });
+    }
+
+    it("rehydrates a persisted station id and resolves it against the dataset", async () => {
+      resetStore();
+      seedPersisted({
+        favorites: ["somafm-gs"],
+        volume: 0.7,
+        muted: false,
+        currentId: "kexp",
+      });
+      await useRadioStore.persist.rehydrate();
+      const s = useRadioStore.getState();
+      expect(s.current?.id).toBe("kexp");
+      expect(s.current?.name).toBe("KEXP 90.3");
+      expect(s.status).toBe("idle");
+      expect(s.flyToId).toBe("kexp");
+      expect(s.favorites).toEqual(["somafm-gs"]);
+    });
+
+    it("a stale/removed station id rehydrates cleanly to current: null", async () => {
+      resetStore();
+      seedPersisted({
+        favorites: [],
+        volume: 0.7,
+        muted: false,
+        currentId: "no-such-station",
+      });
+      await useRadioStore.persist.rehydrate();
+      const s = useRadioStore.getState();
+      expect(s.current).toBeNull();
+      expect(s.status).toBe("idle");
+      expect(s.flyToId).toBeNull();
+    });
+  });
 });

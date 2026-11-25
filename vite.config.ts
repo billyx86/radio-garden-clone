@@ -13,7 +13,7 @@ export default defineConfig({
   test: {
     // Unit tests live in src/; e2e/ is Playwright's turf (see
     // playwright.config.ts) and must never be collected by vitest.
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["e2e/**", "node_modules/**", "dist/**"],
   },
   build: {

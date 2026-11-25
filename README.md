@@ -12,7 +12,9 @@ Mobile-first **3D globe** of live radio stations — a cosmic Radio Garden-style
 - Sticky bottom player (play/pause, volume, favorites)
 - Search by city / station / country (mobile bottom sheet)
 - Genre + region filter chips that cross-filter each other
-- Favorites + volume persisted in `localStorage`
+- Favorites, volume and the last selected station persisted in `localStorage`
+- Bounded retry (with backoff) for transient stream errors before the error banner
+- Restored station shows as the current selection on reload — no autoplay
 - Auto-rotate when idle; respects `prefers-reduced-motion`
 - Full-bleed mobile UI, 44px touch targets, safe-area insets
 - HLS (`.m3u8`) + direct MP3/AAC streams via `hls.js`
@@ -31,7 +33,7 @@ Then open the app (dev server binds all interfaces on port 8080).
 ```bash
 npm run build    # production build → dist/
 npm run typecheck
-npm test         # vitest suite (52 tests over the pure-logic modules)
+npm test         # vitest suite (78 tests over the store, retry decision and audio engine)
 ```
 
 ## Stack
@@ -40,7 +42,7 @@ npm test         # vitest suite (52 tests over the pure-logic modules)
 |-------|------|
 | UI | React 19, Tailwind CSS v4, Outfit font |
 | 3D | three, @react-three/fiber v9, @react-three/drei |
-| State | zustand (persisted favorites/volume) |
+| State | zustand (persisted favorites/volume/last station) |
 | Audio | HTMLAudioElement + hls.js |
 | Build | Vite 6, TypeScript |
 
