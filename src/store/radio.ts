@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Station } from "../data/stations";
+import { stations, type Station } from "../data/stations";
 
 export type PlayStatus = "idle" | "loading" | "playing" | "paused" | "error";
 
@@ -131,7 +131,40 @@ export const useRadioStore = create<RadioState>()(
         favorites: s.favorites,
         volume: s.volume,
         muted: s.muted,
+        // Last selected station (issue #18): persisting the id is enough to
+        // re-resolve against the in-repo static dataset on rehydrate.
+        currentId: s.current?.id ?? null,
       }),
+      merge: (persistedState, currentState) => {
+        const p = (persistedState ?? {}) as {
+          favorites?: string[];
+          volume?: number;
+          muted?: boolean;
+          currentId?: string | null;
+        };
+        // The persisted `currentId` isn't part of the live state shape —
+        // resolve it against the in-repo dataset. A stale id (station
+        // removed) or no id at all means no selection is restored.
+        const restored = p.currentId
+          ? (stations.find((s) => s.id === p.currentId) ?? null)
+          : null;
+        return {
+          ...currentState,
+          // Favorites and volume survive even when the station does not —
+          // the fallback is on the *selection*, not on the whole state.
+          favorites: p.favorites ?? currentState.favorites,
+          volume: p.volume ?? currentState.volume,
+          muted: p.muted ?? currentState.muted,
+          current: restored,
+          // Restore the selection WITHOUT autoplaying: status stays
+          // "idle" so the AudioEngine treats it as selected-not-playing,
+          // and flyToId lights up Globe's existing fly-to so the globe
+          // re-centers on the station (issue #18).
+          status: "idle",
+          errorMessage: null,
+          flyToId: restored ? restored.id : currentState.flyToId,
+        };
+      },
     }
   )
 );
