@@ -1,4 +1,11 @@
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { Heart, Search as SearchIcon, X } from "lucide-react";
 import { stations, applyFilters, searchFacets } from "../data/stations";
 import { useRadioStore } from "../store/radio";
@@ -13,6 +20,10 @@ export function Search() {
   const [tab, setTab] = useState<"all" | "favorites">("all");
   const [genre, setGenre] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
 
   const facets = useMemo(
     () => searchFacets(stations, query, genre, region),
@@ -28,6 +39,63 @@ export function Search() {
     return base;
   }, [query, tab, favorites, genre, region]);
 
+  const clampedActiveIndex =
+    results.length === 0 ? 0 : Math.min(activeIndex, results.length - 1);
+
+  useEffect(() => {
+    setActiveIndex((prev) =>
+      results.length === 0 ? 0 : Math.min(prev, results.length - 1)
+    );
+  }, [results.length]);
+
+  useEffect(() => {
+    if (open) {
+      setActiveIndex(0);
+    } else if (wasOpenRef.current) {
+      triggerRef.current?.focus();
+    }
+    wasOpenRef.current = open;
+  }, [open]);
+
+  const handleSheetKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setSearchOpen(false);
+      return;
+    }
+
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+
+    const sheet = sheetRef.current;
+    if (!sheet || !sheet.contains(document.activeElement)) return;
+
+    const rows = sheet.querySelectorAll<HTMLButtonElement>(
+      '[data-testid="station-row"]'
+    );
+    if (rows.length === 0) return;
+
+    const focusedIndex = Array.from(rows).indexOf(
+      document.activeElement as HTMLButtonElement
+    );
+
+    let nextIndex: number;
+    if (e.key === "ArrowDown") {
+      nextIndex =
+        focusedIndex === -1
+          ? 0
+          : Math.min(rows.length - 1, focusedIndex + 1);
+    } else {
+      nextIndex =
+        focusedIndex === -1
+          ? Math.max(0, clampedActiveIndex - 1)
+          : Math.max(0, focusedIndex - 1);
+    }
+
+    e.preventDefault();
+    setActiveIndex(nextIndex);
+    rows[nextIndex]?.focus();
+  };
+
   const filtersActive = genre !== null || region !== null;
 
   return (
@@ -35,8 +103,11 @@ export function Search() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 safe-top px-3 pt-3">
         <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2">
           <button
+            ref={triggerRef}
             type="button"
             data-testid="search-trigger"
+            aria-expanded={open}
+            aria-controls="search-sheet"
             onClick={() => setSearchOpen(true)}
             className="glass flex min-h-[44px] flex-1 items-center gap-2.5 rounded-2xl px-4 py-2.5 text-left shadow-lg transition active:scale-[0.99]"
           >
@@ -61,7 +132,12 @@ export function Search() {
             onClick={() => setSearchOpen(false)}
           />
           <div
+            ref={sheetRef}
+            id="search-sheet"
+            role="dialog"
+            aria-label="Search stations"
             data-testid="search-sheet"
+            onKeyDown={handleSheetKeyDown}
             className="glass animate-fade-up relative flex max-h-[78dvh] flex-col rounded-t-3xl shadow-2xl"
           >
             <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />
@@ -149,6 +225,7 @@ export function Search() {
             <div className="sheet-scroll min-h-0 flex-1 overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <StationList
                 items={results}
+                activeIndex={clampedActiveIndex}
                 emptyLabel={
                   tab === "favorites"
                     ? "No favorites yet — tap ♥ on a station"
